@@ -18,7 +18,6 @@ int main()
         }
     }
     printf("Character not found");
-
     return 0;
 }
 
