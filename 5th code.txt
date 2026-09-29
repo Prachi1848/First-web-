@@ -1,0 +1,370 @@
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Practical 5 - Registration Form with JavaScript Validation</title>
+
+  <style>
+    /* ================= BASIC STYLING ================= */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: Arial, Helvetica, sans-serif;
+      background-color: #eef2f7;
+      color: #222222;
+      padding: 30px 16px;
+    }
+
+    .form-box {
+      max-width: 480px;
+      margin: 0 auto;              /* center the form */
+      background-color: #ffffff;
+      padding: 28px;
+      border-radius: 10px;
+      border-top: 6px solid #3559a6;
+    }
+
+    h1 {
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: 26px;
+      color: #3559a6;
+      margin-bottom: 6px;
+    }
+
+    .subtitle {
+      font-size: 14px;
+      color: #666666;
+      margin-bottom: 22px;
+    }
+
+    /* Each field (label + input + error) */
+    .field {
+      margin-bottom: 16px;
+    }
+
+    label {
+      display: block;
+      font-weight: bold;
+      font-size: 14px;
+      margin-bottom: 6px;
+    }
+
+    input[type="text"],
+    input[type="email"],
+    input[type="password"],
+    select {
+      width: 100%;
+      padding: 10px;
+      font-size: 15px;
+      border: 2px solid #c5cedb;
+      border-radius: 6px;
+    }
+
+    input:focus,
+    select:focus {
+      outline: none;
+      border-color: #3559a6;
+    }
+
+    /* Radio buttons in one row */
+    .radio-group label {
+      display: inline;
+      font-weight: normal;
+      margin-right: 14px;
+    }
+
+    .checkbox-row label {
+      display: inline;
+      font-weight: normal;
+    }
+
+    /* Red border when the input is wrong */
+    .invalid {
+      border-color: #d93025 !important;
+    }
+
+    /* Green border when the input is correct */
+    .valid {
+      border-color: #1e8e3e !important;
+    }
+
+    /* Error message under each field */
+    .error {
+      color: #d93025;
+      font-size: 13px;
+      margin-top: 4px;
+      min-height: 16px;            /* keeps space so the form doesn't jump */
+    }
+
+    button {
+      width: 100%;
+      padding: 12px;
+      font-size: 16px;
+      font-weight: bold;
+      color: #ffffff;
+      background-color: #3559a6;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background-color: #264280;
+    }
+
+    .reset-btn {
+      margin-top: 10px;
+      background-color: #8a94a6;
+    }
+
+    /* Success message (hidden at first) */
+    #successMsg {
+      display: none;
+      margin-top: 18px;
+      padding: 14px;
+      background-color: #e6f4ea;
+      border-left: 5px solid #1e8e3e;
+      color: #1e5631;
+      font-size: 15px;
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="form-box">
+    <h1>Student Registration</h1>
+    <p class="subtitle">Fields marked * are required.</p>
+
+    <!-- novalidate turns OFF the browser's built-in checks,
+         so that OUR JavaScript does all the validation. -->
+    <form id="regForm" novalidate>
+
+      <div class="field">
+        <label for="fullName">Full Name *</label>
+        <input type="text" id="fullName" placeholder="e.g. Riya Shah">
+        <p class="error" id="nameError"></p>
+      </div>
+
+      <div class="field">
+        <label for="email">Email *</label>
+        <input type="email" id="email" placeholder="e.g. riya@gmail.com">
+        <p class="error" id="emailError"></p>
+      </div>
+
+      <div class="field">
+        <label for="password">Password *</label>
+        <input type="password" id="password" placeholder="At least 8 characters">
+        <p class="error" id="passwordError"></p>
+      </div>
+
+      <div class="field">
+        <label for="confirmPassword">Confirm Password *</label>
+        <input type="password" id="confirmPassword" placeholder="Type password again">
+        <p class="error" id="confirmError"></p>
+      </div>
+
+      <div class="field checkbox-row">
+        <input type="checkbox" id="terms">
+        <label for="terms">I agree to the terms and conditions *</label>
+        <p class="error" id="termsError"></p>
+      </div>
+
+      <button type="submit">Register</button>
+      <button type="reset" class="reset-btn" id="resetBtn">Clear Form</button>
+    </form>
+
+    <div id="successMsg"></div>
+  </div>
+
+
+  <script>
+    /* =====================================================
+       STEP 1: GET THE FORM FROM THE PAGE
+       ===================================================== */
+    var form = document.getElementById("regForm");
+
+    /* =====================================================
+       STEP 2: HELPER FUNCTIONS
+       showError()   -> shows a red message + red border
+       showSuccess() -> clears the message + green border
+       ===================================================== */
+    function showError(inputId, errorId, message) {
+      document.getElementById(errorId).innerText = message;
+      var input = document.getElementById(inputId);
+      if (input) {
+        input.classList.add("invalid");
+        input.classList.remove("valid");
+      }
+    }
+
+    function showSuccess(inputId, errorId) {
+      document.getElementById(errorId).innerText = "";
+      var input = document.getElementById(inputId);
+      if (input) {
+        input.classList.add("valid");
+        input.classList.remove("invalid");
+      }
+    }
+
+    /* =====================================================
+       STEP 3: ONE FUNCTION PER FIELD
+       Each function returns true (correct) or false (wrong).
+       ===================================================== */
+
+    // Name: required, only letters and spaces, at least 3 characters
+    function validateName() {
+      var name = document.getElementById("fullName").value.trim();
+      var pattern = /^[A-Za-z ]+$/;   // letters and spaces only
+
+      if (name === "") {
+        showError("fullName", "nameError", "Please enter your name.");
+        return false;
+      } else if (name.length < 3) {
+        showError("fullName", "nameError", "Name must be at least 3 characters.");
+        return false;
+      } else if (!pattern.test(name)) {
+        showError("fullName", "nameError", "Name can contain only letters.");
+        return false;
+      }
+      showSuccess("fullName", "nameError");
+      return true;
+    }
+
+    // Email: must look like something@something.something
+    function validateEmail() {
+      var email = document.getElementById("email").value.trim();
+      var pattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+      if (email === "") {
+        showError("email", "emailError", "Please enter your email.");
+        return false;
+      } else if (!pattern.test(email)) {
+        showError("email", "emailError", "Please enter a valid email, e.g. name@gmail.com");
+        return false;
+      }
+      showSuccess("email", "emailError");
+      return true;
+    }
+
+    
+ 
+
+   
+
+
+    // Password: 8+ characters, with 1 capital letter, 1 number, 1 special character
+    function validatePassword() {
+      var password = document.getElementById("password").value;
+
+      if (password === "") {
+        showError("password", "passwordError", "Please enter a password.");
+        return false;
+      } else if (password.length < 8) {
+        showError("password", "passwordError", "Password must be at least 8 characters.");
+        return false;
+      } else if (!/[A-Z]/.test(password)) {
+        showError("password", "passwordError", "Add at least one capital letter (A-Z).");
+        return false;
+      } else if (!/[0-9]/.test(password)) {
+        showError("password", "passwordError", "Add at least one number (0-9).");
+        return false;
+      } else if (!/[!@#$%^&*]/.test(password)) {
+        showError("password", "passwordError", "Add at least one special character (!@#$%^&*).");
+        return false;
+      }
+      showSuccess("password", "passwordError");
+      return true;
+    }
+
+    // Confirm password: must match the password
+    function validateConfirmPassword() {
+      var password = document.getElementById("password").value;
+      var confirm = document.getElementById("confirmPassword").value;
+
+      if (confirm === "") {
+        showError("confirmPassword", "confirmError", "Please confirm your password.");
+        return false;
+      } else if (confirm !== password) {
+        showError("confirmPassword", "confirmError", "Passwords do not match.");
+        return false;
+      }
+      showSuccess("confirmPassword", "confirmError");
+      return true;
+    }
+
+    // Terms: checkbox must be ticked
+    function validateTerms() {
+      var terms = document.getElementById("terms").checked;
+
+      if (!terms) {
+        showError(null, "termsError", "You must agree to the terms.");
+        return false;
+      }
+      showSuccess(null, "termsError");
+      return true;
+    }
+
+    /* =====================================================
+       STEP 4: CHECK FIELDS WHILE THE USER TYPES (live check)
+       "blur"   = when the user leaves the field
+       "change" = when a selection changes
+       ===================================================== */
+    document.getElementById("fullName").addEventListener("blur", validateName);
+    document.getElementById("email").addEventListener("blur", validateEmail);
+    document.getElementById("password").addEventListener("blur", validatePassword);
+    document.getElementById("confirmPassword").addEventListener("blur", validateConfirmPassword);
+    document.getElementById("terms").addEventListener("change", validateTerms);
+    }
+
+    /* =====================================================
+       STEP 5: CHECK EVERYTHING WHEN "REGISTER" IS CLICKED
+       ===================================================== */
+    form.addEventListener("submit", function (event) {
+      event.preventDefault();   // stop the page from reloading
+
+      // Run every check. We call ALL of them (not stop at the first
+      // error) so the user sees every mistake at once.
+      var isNameOk     = validateName();
+      var isEmailOk    = validateEmail();
+      var isPasswordOk = validatePassword();
+      var isConfirmOk  = validateConfirmPassword();
+      var isTermsOk    = validateTerms();
+
+      var successBox = document.getElementById("successMsg");
+
+      if (isNameOk && isEmailOk && isPhoneOk && isDobOk && isGenderOk &&
+          isCourseOk && isPasswordOk && isConfirmOk && isTermsOk) {
+
+        var name = document.getElementById("fullName").value.trim();
+        successBox.innerText = "Registration successful! Welcome, " + name + ".";
+        successBox.style.display = "block";
+      } else {
+        successBox.style.display = "none";
+      }
+    });
+
+    /* =====================================================
+       STEP 6: CLEAR ALL MESSAGES WHEN "CLEAR FORM" IS CLICKED
+       ===================================================== */
+    document.getElementById("resetBtn").addEventListener("click", function () {
+      var errors = document.querySelectorAll(".error");
+      for (var i = 0; i < errors.length; i++) {
+        errors[i].innerText = "";
+      }
+
+      var inputs = document.querySelectorAll("input, select");
+      for (var j = 0; j < inputs.length; j++) {
+        inputs[j].classList.remove("valid", "invalid");
+      }
+
+      document.getElementById("successMsg").style.display = "none";
+    });
+  </script>
+
+</body>
+</html>
